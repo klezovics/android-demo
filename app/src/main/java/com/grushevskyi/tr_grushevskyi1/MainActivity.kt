@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var rvAdapter: RVAdapter? = null
     private lateinit var webSocketClient: WebSocketClient
-    private val stockList = MutableList<String>(listOfMyISIN.size){""}
+    private val stockList = MutableList(STOCK_ISIN_ORDERED.size){""}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,13 +82,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun subscribeToSocket() {
-        for (isin in listOfMyISIN) {
+        for (isin in STOCK_ISIN_ORDERED) {
             webSocketClient.send("{\"subscribe\":\"$isin\"}")
         }
     }
 
     private fun unsubscribeFromSocket() {
-        for (isin in listOfMyISIN) {
+        for (isin in STOCK_ISIN_ORDERED) {
             webSocketClient.send("{\"unsubscribe\":\"$isin\"}")
         }
     }
@@ -105,8 +105,8 @@ class MainActivity : AppCompatActivity() {
             val stockRaw = adapter.fromJson(message)
             val stock = String.format("%.2f", stockRaw?.price?.toDouble())
 
-            if (stockRaw != null && listOfMyISIN.indexOf(stockRaw.isin) != -1) {
-                stockList.set(listOfMyISIN.indexOf(stockRaw.isin), stock + " \u20ac")
+            if (stockRaw != null && STOCK_ISIN_ORDERED.indexOf(stockRaw.isin) != -1) {
+                stockList.set(STOCK_ISIN_ORDERED.indexOf(stockRaw.isin), stock + " \u20ac")
             }
 
             val observable = Observable.create<ArrayList<String>> {
@@ -128,46 +128,6 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val WEB_SOCKET_URL = "ws://159.89.15.214:8080/"
         const val TAG = "Trade Republic"
-
-        //val stockNameToIsinMap<String,String> = mutableMapOf()
-        //get listOfMyISIN as list of map's key
-        val listOfMyISIN: ArrayList<String> = arrayListOf(
-            "US0378331005",
-            "DE000A1EWWW0",
-            "NL0000235190",
-            "DE0008404005",
-            "US02079K3059",
-            "US0231351067",
-            "FR0000120628",
-            "US0605051046",
-            "DE000BAY0017",
-            "US0846707026"
-        )
+        val STOCK_ISIN_ORDERED: ArrayList<String> = ArrayList(StockDataProvider.getAllStockIsin())
     }
 }
-
-//            myCompositeDisposable?.add(obs
-//                    .observeOn(AndroidSchedulers.mainThread())
-//                    .subscribeOn(Schedulers.io())
-//                    .doOnEach { Log.d(TAG, "SOMETHING IS HAPPENING OLOLOLO") }
-//                    .subscribe {
-//                        myStocksArrayList = ArrayList(it)
-//                        rvAdapter = RVAdapter(myStocksArrayList!!)
-//                        binding.securitiesList.adapter = rvAdapter
-//                    }
-//                )
-
-//            if (stock != null) {
-//                when(stock.isin) {
-//                    "US0378331005" -> binding.textView1.text = "Apple _______________________ " + String.format("%.2f", stock.price?.toDouble())
-//                    "DE000A1EWWW0" -> binding.textView2.text = "Adidas ______________________ " + String.format("%.2f", stock.price?.toDouble())
-//                    "NL0000235190" -> binding.textView3.text = "Airbus ______________________ " + String.format("%.2f", stock.price?.toDouble())
-//                    "DE0008404005" -> binding.textView4.text = "Allianz ______________________ " + String.format("%.2f", stock.price?.toDouble())
-//                    "US02079K3059" -> binding.textView5.text = "Alphabet ____________________ " + String.format("%.2f", stock.price?.toDouble())
-//                    "US0231351067" -> binding.textView6.text = "Amazon _____________________ " + String.format("%.2f", stock.price?.toDouble())
-//                    "FR0000120628" -> binding.textView7.text = "Axa _________________________ " + String.format("%.2f", stock.price?.toDouble())
-//                    "US0605051046" -> binding.textView8.text = "Bank of America _____________ " + String.format("%.2f", stock.price?.toDouble())
-//                    "DE000BAY0017" -> binding.textView9.text = "Bayer _______________________ " + String.format("%.2f", stock.price?.toDouble())
-//                    "US0846707026" -> binding.textView10.text = "Berkshire ___________________ " + String.format("%.2f", stock.price?.toDouble())
-//                }
-//            }
