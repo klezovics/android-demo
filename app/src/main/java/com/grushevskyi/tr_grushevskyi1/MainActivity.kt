@@ -20,15 +20,21 @@ import javax.net.SocketFactory
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
     private var rvAdapter: RVAdapter? = null
+    private val stockList = MutableList(STOCK_ISIN_ORDERED.size) { "" }
+
     private lateinit var webSocketClient: WebSocketClient
-    private val stockList = MutableList(STOCK_ISIN_ORDERED.size){""}
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        webSocketClient.close()
     }
 
     override fun onResume() {
@@ -37,27 +43,19 @@ class MainActivity : AppCompatActivity() {
         initWebSocket()
     }
 
-    override fun onPause() {
-        super.onPause()
-        webSocketClient.close()
-    }
-
     private fun initRV() {
         binding.rvList.layoutManager = LinearLayoutManager(this)
         binding.rvList.adapter = rvAdapter
     }
 
     private fun initWebSocket() {
-        val traderepublicUri: URI? = URI(WEB_SOCKET_URL)
+        createWebSocketClient(URI(TRADE_REPUBLIC_WEB_SOCKET_URL))
 
-        createWebSocketClient(traderepublicUri)
-
-        val socketFactory = SocketFactory.getDefault() as SocketFactory
-        webSocketClient.setSocketFactory(socketFactory)
+        webSocketClient.setSocketFactory(SocketFactory.getDefault())
         webSocketClient.connect()
     }
 
-    private fun createWebSocketClient(traderepublicUri: URI?) {
+    private fun createWebSocketClient(traderepublicUri: URI) {
         webSocketClient = object : WebSocketClient(traderepublicUri) {
 
             override fun onOpen(handshakedata: ServerHandshake?) {
@@ -94,7 +92,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setUpStockPriceText(message: String?) {
-
         message?.let {
 
             val moshi = Moshi.Builder()
@@ -116,7 +113,7 @@ class MainActivity : AppCompatActivity() {
             observable
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
-                .subscribe ( {
+                .subscribe({
                     rvAdapter = RVAdapter(ArrayList(stockList))
                     binding.rvList.adapter = rvAdapter
                 },
@@ -126,7 +123,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        const val WEB_SOCKET_URL = "ws://159.89.15.214:8080/"
+        const val TRADE_REPUBLIC_WEB_SOCKET_URL = "ws://159.89.15.214:8080/"
         const val TAG = "Trade Republic"
         val STOCK_ISIN_ORDERED: ArrayList<String> = ArrayList(StockDataProvider.getAllStockIsin())
     }
