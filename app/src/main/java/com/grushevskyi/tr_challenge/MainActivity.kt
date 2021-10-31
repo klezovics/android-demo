@@ -1,10 +1,10 @@
-package com.grushevskyi.tr_grushevskyi1
+package com.grushevskyi.tr_challenge
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.grushevskyi.tr_grushevskyi1.databinding.ActivityMainBinding
+import com.grushevskyi.tr_challenge.databinding.ActivityMainBinding
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -21,10 +21,22 @@ import javax.net.SocketFactory
 class MainActivity : AppCompatActivity() {
 
     private var rvAdapter: RVAdapter? = null
-    private val stockList = MutableList(STOCK_ISIN_ORDERED.size) { "" }
+    private val stockPriceList = MutableList(STOCK_ISIN_ORDERED.size) { "" }
+    private val jsonAdapter: JsonAdapter<Stock>
+    private val webSocketClient: WebSocketClient
 
-    private lateinit var webSocketClient: WebSocketClient
     private lateinit var binding: ActivityMainBinding
+
+    init {
+        jsonAdapter = getMoshi().adapter(Stock::class.java)
+        webSocketClient = createWebSocketClient(URI(TRADE_REPUBLIC_WEB_SOCKET_URL))
+    }
+
+    private fun getMoshi(): Moshi {
+        return Moshi.Builder()
+            .addLast(KotlinJsonAdapterFactory())
+            .build()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,14 +61,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initWebSocket() {
-        createWebSocketClient(URI(TRADE_REPUBLIC_WEB_SOCKET_URL))
-
         webSocketClient.setSocketFactory(SocketFactory.getDefault())
         webSocketClient.connect()
     }
 
-    private fun createWebSocketClient(traderepublicUri: URI) {
-        webSocketClient = object : WebSocketClient(traderepublicUri) {
+    private fun createWebSocketClient(traderepublicUri: URI): WebSocketClient {
+        return object : WebSocketClient(traderepublicUri) {
 
             override fun onOpen(handshakedata: ServerHandshake?) {
                 Log.d(TAG, "Opening connection...")
@@ -94,27 +104,25 @@ class MainActivity : AppCompatActivity() {
     private fun setUpStockPriceText(message: String?) {
         message?.let {
 
-            val moshi = Moshi.Builder()
-                .addLast(KotlinJsonAdapterFactory())
-                .build()
-            val adapter: JsonAdapter<Stock> = moshi.adapter(Stock::class.java)
+            val stock = jsonAdapter.fromJson(message)
+            val stockPriceStr = String.format("%.2f", stock?.price?.toDouble())
 
-            val stockRaw = adapter.fromJson(message)
-            val stock = String.format("%.2f", stockRaw?.price?.toDouble())
-
-            if (stockRaw != null && STOCK_ISIN_ORDERED.indexOf(stockRaw.isin) != -1) {
-                stockList.set(STOCK_ISIN_ORDERED.indexOf(stockRaw.isin), stock + " \u20ac")
+            if (stock != null && STOCK_ISIN_ORDERED.indexOf(stock.isin) != -1) {
+                stockPriceList.set(
+                    STOCK_ISIN_ORDERED.indexOf(stock.isin),
+                    stockPriceStr + " \u20ac"
+                )
             }
 
             val observable = Observable.create<ArrayList<String>> {
-                it.onNext(ArrayList(stockList))
+                it.onNext(ArrayList(stockPriceList))
             }
 
             observable
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe({
-                    rvAdapter = RVAdapter(ArrayList(stockList))
+                    rvAdapter = RVAdapter(ArrayList(stockPriceList))
                     binding.rvList.adapter = rvAdapter
                 },
                     { it.localizedMessage }

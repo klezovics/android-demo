@@ -7,7 +7,7 @@ android {
     compileSdk 30
 
     defaultConfig {
-        applicationId "com.grushevskyi.tr_grushevskyi1"
+        applicationId "com.grushevskyi.tr_challenge"
         minSdk 29
         targetSdk 30
         versionCode 1

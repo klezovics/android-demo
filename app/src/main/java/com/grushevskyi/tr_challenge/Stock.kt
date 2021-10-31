@@ -1,4 +1,4 @@
-package com.grushevskyi.tr_grushevskyi1
+package com.grushevskyi.tr_challenge
 
 import com.squareup.moshi.JsonClass
 
