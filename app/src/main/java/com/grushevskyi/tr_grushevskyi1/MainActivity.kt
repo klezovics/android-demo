@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
             val moshi = Moshi.Builder()
                 .addLast(KotlinJsonAdapterFactory())
                 .build()
-            val adapter: JsonAdapter<Stocks> = moshi.adapter(Stocks::class.java)
+            val adapter: JsonAdapter<Stock> = moshi.adapter(Stock::class.java)
 
             val stockRaw = adapter.fromJson(message)
             val stock = String.format("%.2f", stockRaw?.price?.toDouble())
